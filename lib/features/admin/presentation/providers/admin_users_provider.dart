@@ -38,10 +38,7 @@ class AdminUsersProvider extends ChangeNotifier {
 
   Future<List<Empresa>> getEmpresasDisponibles() async {
     try {
-      // Llamamos a ApiService, él se encarga de la IP y el Token
       final listaMapas = await ApiService.obtenerEmpresas();
-
-      // Solo convertimos los datos
       return listaMapas.map((json) => Empresa.fromJson(json)).toList();
     } catch (e) {
       print("Error en provider empresas: $e");
@@ -54,11 +51,10 @@ class AdminUsersProvider extends ChangeNotifier {
     notifyListeners();
 
     try {
-      // Delegamos la conexión a ApiService
       final exito = await ApiService.crearUsuario(datosFormulario);
 
       if (exito) {
-        await cargarUsuarios(); // Recargamos la lista si funcionó
+        await cargarUsuarios();
       } else {
         _error = "No se pudo crear el usuario";
       }
@@ -71,6 +67,46 @@ class AdminUsersProvider extends ChangeNotifier {
     } finally {
       _isLoading = false;
       notifyListeners();
+    }
+  }
+
+  // ✅ NUEVO MÉTODO: Cambiar Estado (Habilitar/Deshabilitar)
+  Future<bool> cambiarEstadoUsuario(int userId) async {
+    try {
+      // 1. Llamamos al servicio (Debes agregar este método en ApiService)
+      final exito = await ApiService.cambiarEstadoUsuario(userId);
+
+      if (exito) {
+        // 2. Actualización Optimista: Actualizamos la lista localmente
+        final index = _usuarios.indexWhere((u) => u.id == userId);
+
+        if (index != -1) {
+          final userViejo = _usuarios[index];
+
+          // Creamos una copia del usuario con el estado invertido
+          // (Es necesario copiar todos los campos porque User es 'final')
+          _usuarios[index] = User(
+            id: userViejo.id,
+            nombreUsuario: userViejo.nombreUsuario,
+            nombreCompleto: userViejo.nombreCompleto,
+            rut: userViejo.rut,
+            empresa: userViejo.empresa,
+            correo: userViejo.correo,
+            rol: userViejo.rol,
+            roles: userViejo.roles,
+            // Aquí ocurre la magia: invertimos el booleano
+            estado: !userViejo.estado,
+          );
+
+          // Notificamos para que la UI se redibuje (cambie el botón y color)
+          notifyListeners();
+        }
+        return true;
+      }
+      return false;
+    } catch (e) {
+      print("Error cambiando estado en provider: $e");
+      return false;
     }
   }
 }

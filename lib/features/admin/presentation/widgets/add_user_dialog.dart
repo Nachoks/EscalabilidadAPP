@@ -20,7 +20,7 @@ class _AddUserDialogState extends State<AddUserDialog> {
   final TextEditingController _nombrePersonalCtrl = TextEditingController();
   final TextEditingController _apellidoPersonalCtrl = TextEditingController();
   final TextEditingController _rutCtrl = TextEditingController();
-
+  final TextEditingController _emailCtrl = TextEditingController();
   // --- Variables Empresa ---
   int? _selectedEmpresaId;
   List<Empresa> _empresasDisponibles = [];
@@ -35,7 +35,8 @@ class _AddUserDialogState extends State<AddUserDialog> {
   final List<String> _rolesDisponibles = [
     'Administrador',
     'Conductor',
-    'Supervisor',
+    'Validador',
+    'Rendidor',
   ];
   final Set<String> _rolesSeleccionados = {};
 
@@ -70,6 +71,7 @@ class _AddUserDialogState extends State<AddUserDialog> {
     _rutCtrl.dispose();
     _usuarioCtrl.dispose();
     _passwordCtrl.dispose();
+    _emailCtrl.dispose();
     super.dispose();
   }
 
@@ -108,6 +110,8 @@ class _AddUserDialogState extends State<AddUserDialog> {
               ),
               const SizedBox(height: 10),
               _buildTextField(_rutCtrl, 'RUT', Icons.badge),
+              const SizedBox(height: 10),
+              _buildTextField(_emailCtrl, 'Correo', Icons.email_outlined),
               const SizedBox(height: 10),
 
               // --- DROPDOWN EMPRESA ---
@@ -240,6 +244,7 @@ class _AddUserDialogState extends State<AddUserDialog> {
                       'nombre': _nombrePersonalCtrl.text,
                       'apellido': _apellidoPersonalCtrl.text,
                       'rut': _rutCtrl.text,
+                      'correo': _emailCtrl.text,
                       'id_empresa': _selectedEmpresaId,
                     },
                     'usuario': {

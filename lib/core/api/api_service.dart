@@ -224,4 +224,35 @@ class ApiService {
       return false;
     }
   }
+
+  // ✅ NUEVO MÉTODO: Cambiar Estado (PUT)
+  static Future<bool> cambiarEstadoUsuario(int id) async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final token = prefs.getString('token');
+
+      // Llamamos a la ruta PUT que definimos en Laravel
+      final response = await http.put(
+        Uri.parse('$baseUrl/admin/usuarios/$id/estado'),
+        headers: {
+          'Authorization': 'Bearer $token',
+          'Content-Type': 'application/json',
+          'Accept': 'application/json',
+        },
+      );
+
+      if (response.statusCode == 200) {
+        print("Estado actualizado: ${response.body}");
+        return true;
+      } else {
+        print(
+          "Error al cambiar estado: ${response.statusCode} - ${response.body}",
+        );
+        return false;
+      }
+    } catch (e) {
+      print("Excepción cambiando estado: $e");
+      return false;
+    }
+  }
 }

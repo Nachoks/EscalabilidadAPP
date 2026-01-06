@@ -4,8 +4,12 @@ class User {
   final String nombreCompleto;
   final String rut;
   final String empresa;
+  final String correo;
   final String rol;
   final List<String> roles;
+
+  // 1. NUEVO CAMPO: Estado del usuario (true = habilitado, false = deshabilitado)
+  final bool estado;
 
   User({
     required this.id,
@@ -13,29 +17,28 @@ class User {
     required this.nombreCompleto,
     required this.rut,
     required this.empresa,
+    required this.correo,
     required this.rol,
     required this.roles,
+    // 2. AGREGAR AL CONSTRUCTOR
+    required this.estado,
   });
 
   factory User.fromJson(Map<String, dynamic> json) {
     // ----------------------------------------------------------
     // PASO 1: Capturar la data anidada (Personal y Empresa)
     // ----------------------------------------------------------
-    // Laravel envía esto dentro de la llave "personal"
     final personalData = json['personal'];
-
-    // Y la empresa está dentro de personal -> empresa
     final empresaData = (personalData != null) ? personalData['empresa'] : null;
 
     // ----------------------------------------------------------
-    // PASO 2: Procesar los Roles (Ajustado para objetos Laravel)
+    // PASO 2: Procesar los Roles
     // ----------------------------------------------------------
     List<String> todosLosRoles = [];
 
     if (json['roles'] != null && json['roles'] is List) {
       todosLosRoles = (json['roles'] as List).map((rolObj) {
         if (rolObj is Map) {
-          // ✅ CORRECCIÓN: Usamos el nombre exacto de tu columna en la BD
           return (rolObj['tipo_usuario'] ?? '').toString().toLowerCase();
         }
         return rolObj.toString().toLowerCase();
@@ -52,8 +55,10 @@ class User {
     if (todosLosRoles.contains('admin') ||
         todosLosRoles.contains('administrador')) {
       rolPrincipal = 'admin';
-    } else if (todosLosRoles.contains('supervisor')) {
-      rolPrincipal = 'supervisor';
+    } else if (todosLosRoles.contains('validador')) {
+      rolPrincipal = 'validador';
+    } else if (todosLosRoles.contains('rendidor')) {
+      rolPrincipal = 'rendidor';
     } else if (todosLosRoles.contains('conductor')) {
       rolPrincipal = 'conductor';
     } else if (todosLosRoles.isNotEmpty) {
@@ -64,7 +69,6 @@ class User {
     // PASO 4: Retornar el Usuario (Mapeo Final)
     // ----------------------------------------------------------
     return User(
-      // Tu API usa 'id_usuario', pero por si acaso dejamos fallback a 'id'
       id: json['id_usuario'] is int
           ? json['id_usuario']
           : (int.tryParse(
@@ -76,21 +80,25 @@ class User {
 
       nombreUsuario: json['nombre_usuario'] ?? '',
 
-      // ✅ CORRECCIÓN: Buscamos dentro de 'personalData', no en la raíz
       nombreCompleto: personalData != null
           ? (personalData['nombre_completo'] ?? 'Usuario Sin Nombre')
           : (json['nombre_usuario'] ?? 'Usuario'),
 
-      // ✅ CORRECCIÓN: Rut vive dentro de personal
       rut: personalData != null
           ? (personalData['rut'] ?? 'Sin RUT')
           : 'Sin RUT',
 
-      // ✅ CORRECCIÓN: Empresa vive dentro de empresaData
       empresa: empresaData != null
-          ? (empresaData['nombre_empresa'] ??
-                'Sin Empresa') // Asegúrate que el campo JSON sea 'nombre_empresa'
+          ? (empresaData['nombre_empresa'] ?? 'Sin Empresa')
           : 'Sin Empresa',
+
+      correo: personalData != null
+          ? (personalData['correo'] ?? 'Sin Correo')
+          : 'Sin Correo',
+
+      // 3. CAPTURAR EL ESTADO
+      // Leemos 'estado' del JSON. Validamos si viene como bool (true) o int (1)
+      estado: json['estado'] == true || json['estado'] == 1,
 
       rol: rolPrincipal,
       roles: todosLosRoles,
@@ -104,13 +112,16 @@ class User {
       'nombre_completo': nombreCompleto,
       'rut': rut,
       'empresa': empresa,
+      'correo': correo,
       'rol': rol,
       'roles': roles,
+      'estado': estado, // Opcional: incluirlo al serializar
     };
   }
 
   bool get esAdmin =>
       roles.contains('admin') || roles.contains('administrador');
-  bool get esSupervisor => roles.contains('supervisor');
   bool get esConductor => roles.contains('conductor');
+  bool get esRendidor => roles.contains('rendidor');
+  bool get esValidador => roles.contains('validador');
 }

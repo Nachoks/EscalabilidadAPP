@@ -21,7 +21,10 @@ class PerfilScreen extends StatelessWidget {
     return Scaffold(
       backgroundColor: AppColors.background,
       appBar: AppBar(
-        title: const Text('Mi Perfil'),
+        title: const Text(
+          'Mi Perfil',
+          style: TextStyle(fontWeight: FontWeight.bold),
+        ),
         backgroundColor: AppColors.primary,
         foregroundColor: Colors.white,
         elevation: 0,
@@ -81,6 +84,13 @@ class PerfilScreen extends StatelessWidget {
                       ),
                       const Divider(),
                       _buildDataRow(Icons.badge, "RUT", user.rut),
+                      const Divider(),
+                      // ✅ NUEVO: Fila de Correo
+                      _buildDataRow(
+                        Icons.email_outlined,
+                        "Correo",
+                        user.correo,
+                      ),
                     ],
                   ),
 
