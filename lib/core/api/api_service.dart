@@ -196,7 +196,9 @@ class ApiService {
   }
 
   // --- Crear Usuario (Transacción) ---
-  static Future<bool> crearUsuario(Map<String, dynamic> datos) async {
+  static Future<Map<String, dynamic>> crearUsuario(
+    Map<String, dynamic> datos,
+  ) async {
     try {
       final prefs = await SharedPreferences.getInstance();
       final token = prefs.getString('token');
@@ -206,22 +208,34 @@ class ApiService {
         headers: {
           'Content-Type': 'application/json',
           'Authorization': 'Bearer $token',
+          'Accept': 'application/json', // Importante para errores de Laravel
         },
         body: jsonEncode(datos),
       );
 
+      final data = jsonDecode(response.body);
+
       if (response.statusCode == 201) {
-        print("Usuario creado OK: ${response.body}");
-        return true;
+        return {'success': true, 'message': 'Usuario creado exitosamente'};
+      }
+      // Errores de validación (Laravel 422)
+      else if (response.statusCode == 422) {
+        final errors = data['errors'];
+        String mensajeError = data['message'];
+
+        // Extraemos el primer error específico si existe
+        if (errors != null && errors is Map) {
+          mensajeError = errors.values.first[0];
+        }
+        return {'success': false, 'message': mensajeError};
       } else {
-        print(
-          "Fallo al crear usuario (${response.statusCode}): ${response.body}",
-        );
-        return false;
+        return {
+          'success': false,
+          'message': data['message'] ?? 'Error desconocido',
+        };
       }
     } catch (e) {
-      print("Excepción creando usuario: $e");
-      return false;
+      return {'success': false, 'message': 'Error de conexión: $e'};
     }
   }
 
@@ -252,6 +266,40 @@ class ApiService {
       }
     } catch (e) {
       print("Excepción cambiando estado: $e");
+      return false;
+    }
+  }
+
+  // ✅ NUEVO: Editar Usuario (PUT)
+  static Future<bool> actualizarUsuario(
+    int id,
+    Map<String, dynamic> datos,
+  ) async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final token = prefs.getString('token');
+
+      final response = await http.put(
+        Uri.parse('$baseUrl/admin/usuarios/$id'),
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer $token',
+          'Accept':
+              'application/json', // Importante para que Laravel responda JSON en errores
+        },
+        body: jsonEncode(datos),
+      );
+
+      if (response.statusCode == 200) {
+        return true;
+      } else {
+        print(
+          "❌ Error al actualizar (${response.statusCode}): ${response.body}",
+        );
+        return false;
+      }
+    } catch (e) {
+      print("❌ Excepción actualizando usuario: $e");
       return false;
     }
   }

@@ -5,9 +5,6 @@ import 'package:somnolence_app/core/utils/roles_helper.dart';
 import 'package:somnolence_app/features/admin/data/models/empresa_model.dart';
 import 'package:somnolence_app/features/admin/presentation/providers/admin_users_provider.dart';
 
-// 1. IMPORTANTE: Importa tu nuevo modelo aquí
-// Ajusta la ruta según donde hayas creado el archivo del Paso 1
-
 class AddUserDialog extends StatefulWidget {
   const AddUserDialog({super.key});
 
@@ -16,22 +13,25 @@ class AddUserDialog extends StatefulWidget {
 }
 
 class _AddUserDialogState extends State<AddUserDialog> {
-  // --- Controladores Personal ---
+  // Clave para validaciones
+  final _formKey = GlobalKey<FormState>();
+
+  // Controladores
   final TextEditingController _nombrePersonalCtrl = TextEditingController();
   final TextEditingController _apellidoPersonalCtrl = TextEditingController();
   final TextEditingController _rutCtrl = TextEditingController();
   final TextEditingController _emailCtrl = TextEditingController();
-  // --- Variables Empresa ---
+  final TextEditingController _usuarioCtrl = TextEditingController();
+  final TextEditingController _passwordCtrl = TextEditingController();
+
+  // Variables de Estado
   int? _selectedEmpresaId;
   List<Empresa> _empresasDisponibles = [];
   bool _isLoadingEmpresas = true;
-
-  // --- Controladores Usuario ---
-  final TextEditingController _usuarioCtrl = TextEditingController();
-  final TextEditingController _passwordCtrl = TextEditingController();
   bool _obscurePassword = true;
+  bool _isSaving = false; // Para bloquear el botón mientras guarda
 
-  // --- Variables Roles ---
+  // Roles
   final List<String> _rolesDisponibles = [
     'Administrador',
     'Conductor',
@@ -47,17 +47,9 @@ class _AddUserDialogState extends State<AddUserDialog> {
   }
 
   Future<void> _cargarEmpresas() async {
-    // 1. Obtenemos el provider (sin escuchar cambios, solo para llamar la función)
     final provider = Provider.of<AdminUsersProvider>(context, listen: false);
-
-    // 2. Llamamos a la función asíncrona que acabamos de crear
-    // Nota: El await va AQUÍ, fuera del setState
     final listaTraida = await provider.getEmpresasDisponibles();
-
-    // 3. Verificamos que el widget siga vivo (mounted) antes de actualizar la UI
     if (!mounted) return;
-
-    // 4. Actualizamos la variable local del Dialog
     setState(() {
       _empresasDisponibles = listaTraida;
       _isLoadingEmpresas = false;
@@ -75,229 +67,211 @@ class _AddUserDialogState extends State<AddUserDialog> {
     super.dispose();
   }
 
+  // --- VALIDACIONES ---
+  String? _validarRequerido(String? value) {
+    if (value == null || value.isEmpty) return 'Campo requerido';
+    return null;
+  }
+
+  String? _validarEmail(String? value) {
+    if (value == null || value.isEmpty) return 'Campo requerido';
+    final emailRegex = RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$');
+    if (!emailRegex.hasMatch(value)) return 'Correo inválido';
+    return null;
+  }
+
+  String? _validarPassword(String? value) {
+    if (value == null || value.isEmpty) return 'La contraseña es requerida';
+    if (value.length < 6) return 'Mínimo 6 caracteres';
+    return null;
+  }
+
   @override
   Widget build(BuildContext context) {
     return AlertDialog(
       title: const Text('Nuevo Usuario'),
       content: SingleChildScrollView(
-        child: SizedBox(
-          width: double.maxFinite,
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              // --- SECCIÓN: DATOS PERSONALES ---
-              _buildSectionTitle("Datos Personales"),
-              const SizedBox(height: 10),
-              Row(
-                children: [
-                  Expanded(
-                    child: _buildTextField(
-                      _nombrePersonalCtrl,
-                      'Nombre',
-                      Icons.person,
-                    ),
-                  ),
-                  const SizedBox(width: 10),
-                  Expanded(
-                    child: _buildTextField(
-                      _apellidoPersonalCtrl,
-                      'Apellido',
-                      Icons.person_outline,
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 10),
-              _buildTextField(_rutCtrl, 'RUT', Icons.badge),
-              const SizedBox(height: 10),
-              _buildTextField(_emailCtrl, 'Correo', Icons.email_outlined),
-              const SizedBox(height: 10),
-
-              // --- DROPDOWN EMPRESA ---
-              _isLoadingEmpresas
-                  ? const Center(child: LinearProgressIndicator())
-                  : DropdownButtonFormField<int>(
-                      value: _selectedEmpresaId,
-                      decoration: const InputDecoration(
-                        labelText: 'Empresa',
-                        prefixIcon: Icon(Icons.business),
-                        border: OutlineInputBorder(),
-                        contentPadding: EdgeInsets.symmetric(
-                          horizontal: 12,
-                          vertical: 8,
-                        ),
+        child: Form(
+          key: _formKey,
+          child: SizedBox(
+            width: double.maxFinite,
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // --- DATOS PERSONALES ---
+                _buildSectionTitle("Datos Personales"),
+                const SizedBox(height: 10),
+                Row(
+                  children: [
+                    Expanded(
+                      child: _buildTextField(
+                        _nombrePersonalCtrl,
+                        'Nombre',
+                        Icons.person,
+                        validator: _validarRequerido,
                       ),
-                      items: _empresasDisponibles.map((empresa) {
-                        return DropdownMenuItem<int>(
-                          value: empresa.id,
-                          child: Text(
-                            empresa.nombre,
-                            overflow: TextOverflow.ellipsis,
+                    ),
+                    const SizedBox(width: 10),
+                    Expanded(
+                      child: _buildTextField(
+                        _apellidoPersonalCtrl,
+                        'Apellido',
+                        Icons.person_outline,
+                        validator: _validarRequerido,
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 10),
+                _buildTextField(
+                  _rutCtrl,
+                  'RUT',
+                  Icons.badge,
+                  validator: _validarRequerido,
+                ),
+                const SizedBox(height: 10),
+                _buildTextField(
+                  _emailCtrl,
+                  'Correo',
+                  Icons.email_outlined,
+                  validator: _validarEmail,
+                ),
+                const SizedBox(height: 10),
+
+                // --- DROPDOWN EMPRESA ---
+                _isLoadingEmpresas
+                    ? const Center(child: LinearProgressIndicator())
+                    : DropdownButtonFormField<int>(
+                        value: _selectedEmpresaId,
+                        decoration: const InputDecoration(
+                          labelText: 'Empresa',
+                          prefixIcon: Icon(Icons.business),
+                          border: OutlineInputBorder(),
+                          isDense: true,
+                          contentPadding: EdgeInsets.symmetric(
+                            horizontal: 12,
+                            vertical: 8,
                           ),
-                        );
-                      }).toList(),
-                      onChanged: (int? newValue) {
-                        setState(() {
-                          _selectedEmpresaId = newValue;
-                        });
-                      },
-                      validator: (value) =>
-                          value == null ? 'Seleccione una empresa' : null,
-                    ),
+                        ),
+                        items: _empresasDisponibles.map((empresa) {
+                          return DropdownMenuItem<int>(
+                            value: empresa.id,
+                            child: Text(
+                              empresa.nombre,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          );
+                        }).toList(),
+                        onChanged: (int? newValue) {
+                          setState(() {
+                            _selectedEmpresaId = newValue;
+                          });
+                        },
+                        validator: (value) =>
+                            value == null ? 'Seleccione una empresa' : null,
+                      ),
 
-              const SizedBox(height: 20),
+                const SizedBox(height: 20),
 
-              // --- SECCIÓN: CUENTA DE USUARIO ---
-              _buildSectionTitle("Cuenta de Usuario"),
-              const SizedBox(height: 10),
-              _buildTextField(
-                _usuarioCtrl,
-                'Nombre de Usuario',
-                Icons.account_circle,
-              ),
-              const SizedBox(height: 10),
-
-              TextField(
-                controller: _passwordCtrl,
-                obscureText: _obscurePassword,
-                decoration: InputDecoration(
-                  labelText: 'Contraseña',
-                  prefixIcon: const Icon(Icons.lock),
-                  border: const OutlineInputBorder(),
-                  contentPadding: const EdgeInsets.symmetric(
-                    horizontal: 12,
-                    vertical: 8,
-                  ),
-                  suffixIcon: IconButton(
-                    icon: Icon(
-                      _obscurePassword
-                          ? Icons.visibility
-                          : Icons.visibility_off,
-                    ),
-                    onPressed: () =>
-                        setState(() => _obscurePassword = !_obscurePassword),
-                  ),
+                // --- CUENTA DE USUARIO ---
+                _buildSectionTitle("Cuenta de Usuario"),
+                const SizedBox(height: 10),
+                _buildTextField(
+                  _usuarioCtrl,
+                  'Nombre de Usuario',
+                  Icons.account_circle,
+                  validator: _validarRequerido,
                 ),
-              ),
+                const SizedBox(height: 10),
 
-              const SizedBox(height: 20),
-
-              // --- SECCIÓN: ROLES ---
-              _buildSectionTitle("Asignar Roles"),
-              const Divider(),
-              if (_rolesSeleccionados.isEmpty)
-                const Padding(
-                  padding: EdgeInsets.only(bottom: 8.0),
-                  child: Text(
-                    "Selecciona al menos un rol",
-                    style: TextStyle(color: Colors.red, fontSize: 12),
+                TextFormField(
+                  controller: _passwordCtrl,
+                  obscureText: _obscurePassword,
+                  validator: _validarPassword,
+                  decoration: InputDecoration(
+                    labelText: 'Contraseña',
+                    prefixIcon: const Icon(Icons.lock),
+                    border: const OutlineInputBorder(),
+                    isDense: true,
+                    contentPadding: const EdgeInsets.symmetric(
+                      horizontal: 12,
+                      vertical: 8,
+                    ),
+                    suffixIcon: IconButton(
+                      icon: Icon(
+                        _obscurePassword
+                            ? Icons.visibility
+                            : Icons.visibility_off,
+                      ),
+                      onPressed: () =>
+                          setState(() => _obscurePassword = !_obscurePassword),
+                    ),
                   ),
                 ),
 
-              ..._rolesDisponibles.map((rol) {
-                final isSelected = _rolesSeleccionados.contains(rol);
-                return CheckboxListTile(
-                  title: Text(rol),
-                  value: isSelected,
-                  activeColor: AppColors.primary,
-                  dense: true,
-                  contentPadding: EdgeInsets.zero,
-                  secondary: Icon(
-                    RoleHelper.getIconForRole(rol),
-                    color: RoleHelper.getColorForRole(rol),
+                const SizedBox(height: 20),
+
+                // --- ROLES ---
+                _buildSectionTitle("Asignar Roles"),
+                const Divider(),
+                if (_rolesSeleccionados.isEmpty)
+                  const Padding(
+                    padding: EdgeInsets.only(bottom: 8.0),
+                    child: Text(
+                      "⚠️ Selecciona al menos un rol",
+                      style: TextStyle(color: Colors.red, fontSize: 12),
+                    ),
                   ),
-                  onChanged: (bool? valor) {
-                    setState(() {
-                      if (valor == true)
-                        _rolesSeleccionados.add(rol);
-                      else
-                        _rolesSeleccionados.remove(rol);
-                    });
-                  },
-                );
-              }),
-            ],
+
+                ..._rolesDisponibles.map((rol) {
+                  final isSelected = _rolesSeleccionados.contains(rol);
+                  return CheckboxListTile(
+                    title: Text(rol),
+                    value: isSelected,
+                    activeColor: AppColors.primary,
+                    dense: true,
+                    contentPadding: EdgeInsets.zero,
+                    secondary: Icon(
+                      RoleHelper.getIconForRole(rol),
+                      color: RoleHelper.getColorForRole(rol),
+                    ),
+                    onChanged: (bool? valor) {
+                      setState(() {
+                        if (valor == true)
+                          _rolesSeleccionados.add(rol);
+                        else
+                          _rolesSeleccionados.remove(rol);
+                      });
+                    },
+                  );
+                }),
+              ],
+            ),
           ),
         ),
       ),
       actions: [
         TextButton(
-          onPressed: () => Navigator.of(context).pop(),
-          child: const Text("Cancelar"),
+          onPressed: _isSaving ? null : () => Navigator.of(context).pop(),
+          child: const Text("Cancelar", style: TextStyle(color: Colors.grey)),
         ),
         ElevatedButton(
           style: ElevatedButton.styleFrom(
             backgroundColor: AppColors.primary,
             foregroundColor: Colors.white,
           ),
-          onPressed: (_rolesSeleccionados.isEmpty || _selectedEmpresaId == null)
-              ? null
-              : () async {
-                  // 1. Mostrar carga
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(content: Text('Procesando... espere')),
-                  );
-
-                  final datosFormulario = {
-                    'personal': {
-                      'nombre': _nombrePersonalCtrl.text,
-                      'apellido': _apellidoPersonalCtrl.text,
-                      'rut': _rutCtrl.text,
-                      'correo': _emailCtrl.text,
-                      'id_empresa': _selectedEmpresaId,
-                    },
-                    'usuario': {
-                      'username': _usuarioCtrl.text,
-                      'password': _passwordCtrl.text,
-                    },
-                    'roles': _rolesSeleccionados.toList(),
-                  };
-
-                  print("📤 Enviando datos: $datosFormulario");
-
-                  final provider = Provider.of<AdminUsersProvider>(
-                    context,
-                    listen: false,
-                  );
-
-                  // 2. Intentar crear
-                  final exito = await provider.crearUsuario(datosFormulario);
-
-                  if (!mounted) return;
-
-                  // 3. Manejar resultado
-                  Navigator.of(context).pop(); // Cerramos el diálogo primero
-
-                  if (exito) {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(
-                        content: Text('✅ Usuario creado exitosamente'),
-                        backgroundColor: Colors.green,
-                      ),
-                    );
-                  } else {
-                    // Si falló, mostramos un diálogo con el error (si el provider lo guardó)
-                    // OJO: Revisa tu consola para el detalle exacto si esto es genérico
-                    showDialog(
-                      context: context,
-                      builder: (context) => AlertDialog(
-                        title: const Text("❌ Error al Guardar"),
-                        content: Text(
-                          provider.error ??
-                              "El servidor rechazó los datos.\n\nPosibles causas:\n1. RUT duplicado\n2. Usuario duplicado\n3. Roles mal escritos en BD",
-                        ),
-                        actions: [
-                          TextButton(
-                            onPressed: () => Navigator.pop(context),
-                            child: const Text("OK"),
-                          ),
-                        ],
-                      ),
-                    );
-                  }
-                },
-          child: const Text("Guardar Usuario"),
+          onPressed: _isSaving ? null : _guardarUsuario,
+          child: _isSaving
+              ? const SizedBox(
+                  width: 20,
+                  height: 20,
+                  child: CircularProgressIndicator(
+                    color: Colors.white,
+                    strokeWidth: 2,
+                  ),
+                )
+              : const Text("Guardar Usuario"),
         ),
       ],
     );
@@ -317,10 +291,12 @@ class _AddUserDialogState extends State<AddUserDialog> {
   Widget _buildTextField(
     TextEditingController controller,
     String label,
-    IconData icon,
-  ) {
-    return TextField(
+    IconData icon, {
+    String? Function(String?)? validator,
+  }) {
+    return TextFormField(
       controller: controller,
+      validator: validator,
       decoration: InputDecoration(
         labelText: label,
         prefixIcon: Icon(icon, size: 20),
@@ -330,5 +306,66 @@ class _AddUserDialogState extends State<AddUserDialog> {
       ),
     );
   }
+
+  Future<void> _guardarUsuario() async {
+    // 1. Validaciones
+    if (!_formKey.currentState!.validate()) return;
+
+    if (_rolesSeleccionados.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text("Seleccione al menos un rol")),
+      );
+      return;
+    }
+
+    setState(() => _isSaving = true); // Bloqueo visual
+
+    final datosFormulario = {
+      'personal': {
+        'nombre': _nombrePersonalCtrl.text.trim(),
+        'apellido': _apellidoPersonalCtrl.text.trim(),
+        'rut': _rutCtrl.text.trim(),
+        'correo': _emailCtrl.text.trim(),
+        'id_empresa': _selectedEmpresaId,
+      },
+      'usuario': {
+        'username': _usuarioCtrl.text.trim(),
+        'password': _passwordCtrl.text,
+      },
+      'roles': _rolesSeleccionados.toList(),
+    };
+
+    final provider = Provider.of<AdminUsersProvider>(context, listen: false);
+
+    // 2. Llamada al Provider
+    final exito = await provider.crearUsuario(datosFormulario);
+
+    if (!mounted) return;
+
+    setState(() => _isSaving = false); // Desbloqueo
+
+    if (exito) {
+      Navigator.of(context).pop(); // Cerramos solo si hubo éxito
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('✅ Usuario creado exitosamente'),
+          backgroundColor: Colors.green,
+        ),
+      );
+    } else {
+      // ❌ Error Específico: Mostramos lo que respondió el backend
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(provider.error ?? "Error desconocido"),
+          backgroundColor: Colors.red,
+          duration: const Duration(seconds: 4),
+          action: SnackBarAction(
+            label: 'OK',
+            textColor: Colors.white,
+            onPressed: () {},
+          ),
+        ),
+      );
+    }
+  }
 }
-// NOTA: La clase Empresa ha sido eliminada de aquí.

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart'; // ✅ Importante para acceder al Provider
 import 'package:somnolence_app/core/constants/app_colors.dart';
 import 'package:somnolence_app/core/utils/roles_helper.dart';
+import 'package:somnolence_app/features/admin/presentation/widgets/edit_user_dialog.dart';
 import 'package:somnolence_app/features/auth/data/models/user_model.dart';
 import 'package:somnolence_app/features/admin/presentation/providers/admin_users_provider.dart'; // ✅ Importamos el provider
 
@@ -195,7 +196,10 @@ class _UserDetailsScreenState extends State<UserDetailsScreen> {
           width: double.infinity,
           child: ElevatedButton.icon(
             onPressed: () {
-              // TODO: Navegar a pantalla de edición o abrir diálogo
+              showDialog(
+                context: context,
+                builder: (context) => EditUserDialog(user: widget.user),
+              );
             },
             icon: const Icon(Icons.edit),
             label: const Text('Editar Usuario'),
@@ -208,7 +212,7 @@ class _UserDetailsScreenState extends State<UserDetailsScreen> {
         ),
         const SizedBox(height: 12),
 
-        // ✅ BOTÓN INTELIGENTE (HABILITAR/DESHABILITAR)
+        // (HABILITAR/DESHABILITAR)
         SizedBox(
           width: double.infinity,
           child: OutlinedButton.icon(

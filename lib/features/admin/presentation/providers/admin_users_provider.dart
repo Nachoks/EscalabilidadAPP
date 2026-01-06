@@ -50,27 +50,23 @@ class AdminUsersProvider extends ChangeNotifier {
     _isLoading = true;
     notifyListeners();
 
-    try {
-      final exito = await ApiService.crearUsuario(datosFormulario);
+    final respuesta = await ApiService.crearUsuario(datosFormulario);
 
-      if (exito) {
-        await cargarUsuarios();
-      } else {
-        _error = "No se pudo crear el usuario";
-      }
-
-      return exito;
-    } catch (e) {
-      print("Error en provider crear usuario: $e");
-      _error = "Error de conexión";
-      return false;
-    } finally {
+    if (respuesta['success']) {
+      await cargarUsuarios(); // Recargamos la lista
+      _error = null;
       _isLoading = false;
       notifyListeners();
+      return true;
+    } else {
+      _error = respuesta['message']; // Guardamos el error específico
+      _isLoading = false;
+      notifyListeners();
+      return false;
     }
   }
 
-  // ✅ NUEVO MÉTODO: Cambiar Estado (Habilitar/Deshabilitar)
+  //Cambiar Estado (Habilitar/Deshabilitar)
   Future<bool> cambiarEstadoUsuario(int userId) async {
     try {
       // 1. Llamamos al servicio (Debes agregar este método en ApiService)
@@ -107,6 +103,31 @@ class AdminUsersProvider extends ChangeNotifier {
     } catch (e) {
       print("Error cambiando estado en provider: $e");
       return false;
+    }
+  }
+
+  //editar
+  Future<bool> editarUsuario(int idUsuario, Map<String, dynamic> datos) async {
+    _isLoading = true;
+    notifyListeners();
+
+    try {
+      final exito = await ApiService.actualizarUsuario(idUsuario, datos);
+
+      if (exito) {
+        // Si salió bien, recargamos toda la lista para ver los cambios reflejados
+        // y asegurar que la info local esté sincronizada con la BD.
+        await cargarUsuarios();
+      } else {
+        _error = "No se pudieron guardar los cambios";
+      }
+      return exito;
+    } catch (e) {
+      _error = "Error de conexión";
+      return false;
+    } finally {
+      _isLoading = false;
+      notifyListeners();
     }
   }
 }
