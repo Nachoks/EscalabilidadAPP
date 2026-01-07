@@ -10,7 +10,7 @@ class ApiService {
 
   static String baseUrl = _urlExterna;
 
-  // 2. INICIALIZACIÓN DE CONEXIÓN (Ping)
+  // Inicializar conexión (decidir entre local o externa)
   static Future<void> inicializarConexion() async {
     print("📡 Probando conexión local con $_urlLocal...");
     try {
@@ -25,7 +25,7 @@ class ApiService {
     }
   }
 
-  // 3. LOGIN ROBUSTO
+  // Login
   static Future<Map<String, dynamic>> login(
     String usuario,
     String password,
@@ -85,6 +85,7 @@ class ApiService {
 
   // --- MÉTODOS DE AUTENTICACIÓN Y SESIÓN ---
 
+  // Logout
   static Future<void> logout() async {
     try {
       final prefs = await SharedPreferences.getInstance();
@@ -106,11 +107,13 @@ class ApiService {
     }
   }
 
+  // Verificar si hay sesión activa
   static Future<bool> isLoggedIn() async {
     final prefs = await SharedPreferences.getInstance();
     return prefs.getString('token') != null;
   }
 
+  // Obtener Usuario Local
   static Future<Map<String, dynamic>?> getUsuarioLocal() async {
     final prefs = await SharedPreferences.getInstance();
     final usuarioStr = prefs.getString('usuario');
@@ -118,8 +121,9 @@ class ApiService {
     return null;
   }
 
-  // --- MÉTODOS DE NEGOCIO ---
+  //MÉTODOS DE NEGOCIO
 
+  // Obtener Patentes de Vehículos
   static Future<List<String>> obtenerPatentes() async {
     try {
       final prefs = await SharedPreferences.getInstance();
@@ -141,6 +145,7 @@ class ApiService {
     }
   }
 
+  // Obtener todos los usuarios (Admin)
   static Future<List<Map<String, dynamic>>> obtenerTodosLosUsuarios() async {
     try {
       final prefs = await SharedPreferences.getInstance();
@@ -167,7 +172,7 @@ class ApiService {
     }
   }
 
-  // --- Obtener Empresas para Dropdown ---
+  // Obtener Empresas para Dropdown
   static Future<List<dynamic>> obtenerEmpresas() async {
     try {
       final prefs = await SharedPreferences.getInstance();
@@ -195,7 +200,7 @@ class ApiService {
     }
   }
 
-  // --- Crear Usuario (Transacción) ---
+  // Crear Usuario
   static Future<Map<String, dynamic>> crearUsuario(
     Map<String, dynamic> datos,
   ) async {
@@ -239,7 +244,7 @@ class ApiService {
     }
   }
 
-  // ✅ NUEVO MÉTODO: Cambiar Estado (PUT)
+  // Cambiar Estado (PUT)
   static Future<bool> cambiarEstadoUsuario(int id) async {
     try {
       final prefs = await SharedPreferences.getInstance();
@@ -270,7 +275,7 @@ class ApiService {
     }
   }
 
-  // ✅ NUEVO: Editar Usuario (PUT)
+  // Editar Usuario (PUT)
   static Future<bool> actualizarUsuario(
     int id,
     Map<String, dynamic> datos,
@@ -301,6 +306,47 @@ class ApiService {
     } catch (e) {
       print("❌ Excepción actualizando usuario: $e");
       return false;
+    }
+  }
+
+  // Cambiar Password
+  static Future<Map<String, dynamic>> cambiarPassword(
+    String actual,
+    String nueva,
+    String confirmacion,
+  ) async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final token = prefs.getString('token');
+
+      final response = await http.post(
+        Uri.parse('$baseUrl/change-password'),
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer $token',
+          'Accept':
+              'application/json', // Importante para recibir errores de validación de Laravel
+        },
+        body: jsonEncode({
+          'current_password': actual,
+          'new_password': nueva,
+          'new_password_confirmation': confirmacion,
+        }),
+      );
+
+      final data = jsonDecode(response.body);
+
+      if (response.statusCode == 200) {
+        return {'success': true, 'message': data['message']};
+      } else {
+        // Capturamos el error que envía Laravel (ej: "Contraseña incorrecta")
+        return {
+          'success': false,
+          'message': data['message'] ?? 'Error al actualizar contraseña',
+        };
+      }
+    } catch (e) {
+      return {'success': false, 'message': 'Error de conexión: $e'};
     }
   }
 }

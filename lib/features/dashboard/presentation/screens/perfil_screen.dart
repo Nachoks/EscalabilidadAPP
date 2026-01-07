@@ -5,6 +5,7 @@ import 'package:provider/provider.dart';
 import 'package:somnolence_app/core/constants/app_colors.dart'; // Tu archivo de colores// Tu helper de roles
 import 'package:somnolence_app/core/utils/roles_helper.dart';
 import 'package:somnolence_app/features/auth/presentation/providers/auth_provider.dart';
+import 'package:somnolence_app/features/dashboard/presentation/widget/change_password_dialog.dart';
 
 class PerfilScreen extends StatelessWidget {
   const PerfilScreen({super.key});
@@ -155,10 +156,11 @@ class PerfilScreen extends StatelessWidget {
                     height: 50,
                     child: OutlinedButton.icon(
                       onPressed: () {
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(
-                            content: Text("Funcionalidad próximamente..."),
-                          ),
+                        showDialog(
+                          context: context,
+                          barrierDismissible:
+                              false, // Obliga a usar los botones para cerrar
+                          builder: (context) => const ChangePasswordDialog(),
                         );
                       },
                       icon: const Icon(Icons.lock_reset),
