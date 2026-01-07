@@ -527,7 +527,9 @@ class _ControlSalidaContentState extends State<_ControlSalidaContent> {
         width: double.infinity,
         height: 56,
         decoration: BoxDecoration(
-          gradient: LinearGradient(colors: [_primaryColor, _secondaryColor]),
+          gradient: LinearGradient(
+            colors: [Color(0xFF007BFF), Color.fromARGB(255, 84, 143, 206)],
+          ),
           borderRadius: BorderRadius.circular(28),
           boxShadow: [
             BoxShadow(
