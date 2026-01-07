@@ -8,10 +8,6 @@ import 'package:somnolence_app/features/cuestionarios/presentation/screens/fatig
 import 'package:somnolence_app/features/cuestionarios/presentation/screens/somnolencia_screen.dart';
 import 'package:somnolence_app/features/auth/presentation/providers/auth_provider.dart';
 import 'package:somnolence_app/features/auth/data/models/user_model.dart';
-// Nota: Ya no necesitamos LogoAppbar aquí porque usaremos la flecha de volver
-// import 'package:somnolence_app/core/widgets/logo_appbar.dart';
-
-// IMPORTS PROPIOS
 import '../providers/home_provider.dart';
 
 class ControlSalidaScreen extends StatelessWidget {

@@ -180,6 +180,22 @@ class _LoginContentState extends State<_LoginContent> {
                             ),
                     ),
                   ),
+                  Container(
+                    margin: const EdgeInsets.only(top: 20),
+                    child: Text(
+                      '© 2024 Inversiones Arenas & Arenas',
+                      textAlign: TextAlign.center,
+                      style: TextStyle(color: Colors.grey[500], fontSize: 14),
+                    ),
+                  ),
+                  Container(
+                    margin: const EdgeInsets.only(top: 10),
+                    child: Text(
+                      'Versión 1.0',
+                      textAlign: TextAlign.center,
+                      style: TextStyle(color: Colors.grey[400], fontSize: 12),
+                    ),
+                  ),
                 ],
               ),
             ),
